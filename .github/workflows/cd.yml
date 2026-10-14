@@ -21,12 +21,8 @@ jobs:
       - name: Build production binary
         run: ./scripts/buildprod.sh
 
-      - name: Simulate Cloud Build locally (no Google upload)
-        run: |
-          export PATH="$PWD/scripts/local-cloud-simulation:$PATH"
-          gcloud builds submit --tag us-central1-docker.pkg.dev/notely-511611/notely-ar-repo/notely:latest .
+      - name: Build container image
+        run: docker build -t "notely:${{ github.sha }}" .
 
-      - name: Simulate Cloud Run with an actual container smoke test
-        run: |
-          export PATH="$PWD/scripts/local-cloud-simulation:$PATH"
-          gcloud run deploy notely --image us-central1-docker.pkg.dev/notely-511611/notely-ar-repo/notely:latest --region us-central1 --allow-unauthenticated --project notely-511611 --max-instances=4
+      - name: Verify container HTTP endpoints
+        run: ./scripts/smoke-container.sh "notely:${{ github.sha }}"
