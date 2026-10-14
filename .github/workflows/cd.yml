@@ -25,3 +25,8 @@ jobs:
         run: |
           export PATH="$PWD/scripts/local-cloud-simulation:$PATH"
           gcloud builds submit --tag us-central1-docker.pkg.dev/notely-511611/notely-ar-repo/notely:latest .
+
+      - name: Simulate Cloud Run with an actual container smoke test
+        run: |
+          export PATH="$PWD/scripts/local-cloud-simulation:$PATH"
+          gcloud run deploy notely --image us-central1-docker.pkg.dev/notely-511611/notely-ar-repo/notely:latest --region us-central1 --allow-unauthenticated --project notely-511611 --max-instances=4
