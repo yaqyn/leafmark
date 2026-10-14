@@ -20,3 +20,8 @@ jobs:
 
       - name: Build production binary
         run: ./scripts/buildprod.sh
+
+      - name: Simulate Cloud Build locally (no Google upload)
+        run: |
+          export PATH="$PWD/scripts/local-cloud-simulation:$PATH"
+          gcloud builds submit --tag us-central1-docker.pkg.dev/notely-511611/notely-ar-repo/notely:latest .

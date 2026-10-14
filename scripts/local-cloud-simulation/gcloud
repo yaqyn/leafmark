@@ -1,0 +1,12 @@
+#!/bin/sh
+# Local simulation only: no Google authentication, remote build, or upload.
+set -eu
+
+if [ "$#" -eq 5 ] && [ "$1" = builds ] && [ "$2" = submit ] && [ "$3" = --tag ] && [ "$5" = . ]; then
+    printf '%s\n' 'LOCAL SIMULATION: building with Docker on this runner; no Google Cloud upload.'
+    printf 'Requested cloud tag (not published): %s\n' "$4"
+    exec docker build -t "notely-simulation:${GITHUB_SHA:-local}" .
+fi
+
+printf '%s\n' 'Local cloud simulator: unsupported command; no cloud action performed.' >&2
+exit 2
