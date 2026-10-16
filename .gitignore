@@ -8,3 +8,6 @@ leafmark
 *.db
 *.db-shm
 *.db-wal
+
+backups/
+artifacts/

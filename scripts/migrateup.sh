@@ -1,8 +1,3 @@
-#!/bin/bash
-
-if [ -f .env ]; then
-    source .env
-fi
-
-cd sql/schema
-goose turso $DATABASE_URL up
+#!/bin/sh
+set -eu
+printf '%s\n' 'Leafmark now applies additive migrations transactionally at startup.' 'Start the server with your DATABASE_URL configured. Back up the database before upgrading.'

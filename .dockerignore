@@ -1,0 +1,11 @@
+.git
+.env
+.env.*
+!.env.example
+notely
+leafmark
+vendor
+*.db
+*.db-*
+readme-assets
+artifacts
