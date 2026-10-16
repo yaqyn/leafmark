@@ -32,11 +32,25 @@ function announce(message, error = false) {
   }, 4500);
 }
 async function api(path, options = {}) {
-  const response = await fetch("/v1" + path, {
-    credentials: "same-origin",
-    ...options,
-    headers: { "Content-Type": "application/json", ...options.headers },
-  });
+  let response;
+  try {
+    const timeout = AbortSignal.timeout(20000);
+    response = await fetch("/v1" + path, {
+      credentials: "same-origin",
+      ...options,
+      signal: options.signal
+        ? AbortSignal.any([options.signal, timeout])
+        : timeout,
+      headers: { "Content-Type": "application/json", ...options.headers },
+    });
+  } catch (error) {
+    if (error.name === "AbortError") throw error;
+    throw new Error(
+      error.name === "TimeoutError"
+        ? "The server took too long to respond. Try again."
+        : "Could not connect. Check your connection and try again.",
+    );
+  }
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
     const error = new Error(
@@ -178,6 +192,9 @@ $("auth-form").onsubmit = async (event) => {
   state.busy = true;
   for (const control of document.querySelectorAll("#auth input, #auth button"))
     control.disabled = true;
+  const submitLabel = $("auth-submit").textContent;
+  $("auth-submit").textContent =
+    mode === "login" ? "Signing in…" : "Creating notebook…";
   $("auth-form").setAttribute("aria-busy", "true");
   try {
     const data = { username, password };
@@ -204,7 +221,9 @@ $("auth-form").onsubmit = async (event) => {
       "#auth input, #auth button",
     ))
       control.disabled = false;
+    $("auth-submit").textContent = submitLabel;
     $("auth-form").removeAttribute("aria-busy");
+    if ($("auth-error").textContent && !$("auth").hidden) $("username").focus();
   }
 };
 async function enterWorkspace() {
@@ -394,6 +413,8 @@ function draft() {
 }
 function markDirty() {
   state.dirty = true;
+  $("note-title").removeAttribute("aria-invalid");
+  $("note-body").removeAttribute("aria-invalid");
   $("save-status").textContent = "Unsaved changes";
   updateWords();
 }
@@ -404,6 +425,7 @@ async function saveNote(patch = {}, leave = false) {
   const data = { ...draft(), ...patch };
   if (!data.title.trim() && !data.note.trim()) {
     $("editor-error").textContent = "Write a title or note before saving.";
+    $("note-title").setAttribute("aria-invalid", "true");
     $("note-title").focus();
     return false;
   }
