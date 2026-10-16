@@ -1,0 +1,10 @@
+{
+ "profile":"product-admin",
+ "sourceRoots":["static"],
+ "locale":"en",
+ "canonicalMap":"UX-CONTRACT.md",
+ "requiredCapabilities":["Form","Scrollbar","Toast","CRUD"],
+ "requiredCommands":["unit","javascript"],
+ "commands":{"unit":"go test ./...","javascript":"node --check static/app.js"},
+ "evidence":{"crudFullFlow":"server_test.go","failurePaths":"server_test.go"}
+}

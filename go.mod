@@ -1,4 +1,4 @@
-module github.com/bootdotdev/learn-cicd-starter
+module github.com/yaqyn/leafmark
 
 go 1.27.1
 

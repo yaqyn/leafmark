@@ -1,206 +1,336 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <title>Notely</title>
-</head>
-
-<body class="section">
-    <h1>Welcome to Notely</h1>
-
-    <div id="userCreationContainer" class="section">
-        <input id="nameField" type="text" placeholder="Enter your name">
-        <button id="createUserButton" onclick="createUser()">Create User</button>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#365bc4" />
+    <meta
+      name="description"
+      content="Leafmark is your personal notebook. Capture, find, and keep your thoughts."
+    />
+    <title>Leafmark — Your personal notebook</title>
+    <link rel="icon" href="/assets/mark.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/assets/app.css" />
+    <script src="/assets/app.js" defer></script>
+  </head>
+  <body>
+    <noscript
+      >Leafmark needs JavaScript to edit notes. Enable JavaScript and reload
+      this page.</noscript
+    >
+    <a class="skip" href="#main">Skip to notebook</a>
+    <main id="main">
+      <section id="auth" class="auth-layout">
+        <div class="intro">
+          <a class="brand" href="/" aria-label="Leafmark home"
+            ><img
+              src="/assets/mark.svg"
+              alt=""
+              width="36"
+              height="36"
+            />leafmark<span class="brand-dot">.</span></a
+          >
+          <div class="intro-copy">
+            <p class="quiet">A little space for your thoughts</p>
+            <h1>Keep what<br />comes to mind.</h1>
+            <p>
+              Half-formed ideas. Things you learned.<br />The words you want to
+              come back to.
+            </p>
+            <div class="paper-preview" aria-hidden="true">
+              <span class="paper-date">A page of your own</span
+              ><strong>Make room for the idea.</strong>
+              <p>
+                Write it down before the day moves on.<br />You can find the
+                right words later.
+              </p>
+              <span class="paper-line"></span
+              ><span class="paper-line short"></span>
+            </div>
+          </div>
+          <p class="intro-foot">Your notes, in your own words.</p>
+        </div>
+        <div class="auth-side">
+          <div class="auth-card">
+            <h2 id="auth-title">Welcome back.</h2>
+            <p id="auth-description" class="muted">
+              Open your notebook and pick up where you left off.
+            </p>
+            <div class="auth-tabs" aria-label="Account action">
+              <button type="button" id="login-mode" class="selected" disabled>
+                Sign in</button
+              ><button type="button" id="register-mode" disabled>
+                Create account
+              </button>
+            </div>
+            <form id="auth-form" novalidate>
+              <div id="name-row" hidden>
+                <label for="name">Your name</label
+                ><input
+                  id="name"
+                  name="name"
+                  autocomplete="name"
+                  maxlength="80"
+                  aria-describedby="auth-error"
+                />
+              </div>
+              <label for="username">Username</label
+              ><input
+                id="username"
+                name="username"
+                autocomplete="username"
+                autocapitalize="none"
+                spellcheck="false"
+                maxlength="40"
+                aria-describedby="username-help auth-error"
+              />
+              <p id="username-help" class="help">
+                3–40 letters, numbers, dashes or underscores.
+              </p>
+              <label for="password">Password</label>
+              <div class="secret">
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autocomplete="current-password"
+                  maxlength="256"
+                  aria-describedby="password-help auth-error"
+                /><button
+                  type="button"
+                  class="ghost reveal"
+                  data-for="password"
+                  aria-label="Show password"
+                  aria-pressed="false"
+                  disabled
+                >
+                  Show
+                </button>
+              </div>
+              <p id="password-help" class="help">
+                Use at least 12 characters. A few unrelated words work well.
+              </p>
+              <div id="legacy-row" hidden>
+                <label for="legacy-key">Your Notely API key</label>
+                <div class="secret">
+                  <input
+                    id="legacy-key"
+                    type="password"
+                    autocomplete="off"
+                    aria-describedby="auth-error"
+                  /><button
+                    type="button"
+                    class="ghost reveal"
+                    data-for="legacy-key"
+                    aria-label="Show Notely API key"
+                    aria-pressed="false"
+                    disabled
+                  >
+                    Show
+                  </button>
+                </div>
+                <p class="help">
+                  Move your existing notes into Leafmark. Your old key will be
+                  retired.
+                </p>
+              </div>
+              <p id="auth-error" class="error form-error" role="alert"></p>
+              <button id="auth-submit" class="primary wide" type="submit">
+                Open notebook
+              </button>
+            </form>
+            <button id="legacy-mode" type="button" class="link-button" disabled>
+              Bringing notes from Notely?
+            </button>
+            <p class="help auth-foot">
+              No email required. Keep your password safe:<br />account recovery
+              is not available.
+            </p>
+          </div>
+        </div>
+      </section>
+      <section id="workspace" class="workspace" hidden>
+        <aside class="rail">
+          <a class="brand" href="/" aria-label="Leafmark home"
+            ><img
+              src="/assets/mark.svg"
+              alt=""
+              width="30"
+              height="30"
+            />leafmark<span class="brand-dot">.</span></a
+          >
+          <button id="new-note" class="primary" disabled>＋ New note</button>
+          <nav aria-label="Notebook">
+            <button class="nav-item selected" data-view="all" disabled>
+              <span aria-hidden="true">▤</span> All notes</button
+            ><button class="nav-item" data-view="pinned" disabled>
+              <span aria-hidden="true">☆</span> Pinned</button
+            ><button class="nav-item" data-view="archive" disabled>
+              <span aria-hidden="true">▱</span> Archive</button
+            ><button class="nav-item" data-view="trash" disabled>
+              <span aria-hidden="true">♧</span> Trash
+            </button>
+          </nav>
+          <div class="rail-bottom">
+            <button id="export-all" class="ghost" disabled>
+              Download all notes
+            </button>
+            <div class="identity">
+              <span id="avatar" aria-hidden="true">L</span>
+              <div>
+                <strong id="account-name"></strong
+                ><button id="logout" class="link-button" disabled>
+                  Sign out
+                </button>
+              </div>
+            </div>
+            <p class="help">A page of your own.</p>
+          </div>
+        </aside>
+        <section id="list-panel" class="list-panel" aria-label="Note list">
+          <header class="list-header">
+            <div class="list-heading">
+              <h1 id="view-title">All notes</h1>
+              <span id="note-count" class="count">0</span>
+            </div>
+            <form id="search-form" class="search-box" role="search" novalidate>
+              <label class="sr-only" for="search">Search notes</label
+              ><input
+                id="search"
+                type="search"
+                placeholder="Find a thought…"
+                maxlength="200"
+              /><button
+                id="clear-search"
+                type="button"
+                class="ghost"
+                aria-label="Clear search"
+                hidden
+                disabled
+              >
+                ×
+              </button>
+            </form>
+          </header>
+          <p id="list-status" class="list-status" role="status"></p>
+          <div id="note-list" class="note-list"></div>
+          <footer class="pagination">
+            <button
+              id="previous"
+              class="ghost"
+              disabled
+              aria-label="Previous page"
+            >
+              ←</button
+            ><span id="page-label">Page 1</span
+            ><button id="next" class="ghost" disabled aria-label="Next page">
+              →</button
+            ><button id="refresh" class="ghost" disabled>Reload notes</button>
+          </footer>
+        </section>
+        <section
+          id="editor-panel"
+          class="editor-panel"
+          aria-label="Note editor"
+        >
+          <div id="editor-empty" class="editor-empty">
+            <img src="/assets/mark.svg" alt="" width="64" height="64" />
+            <h2>A thought worth keeping?</h2>
+            <p>Start a new note, or choose one<br />from your notebook.</p>
+            <button id="empty-new" class="outline" disabled>
+              Write something
+            </button>
+          </div>
+          <form id="editor-form" class="editor-form" novalidate hidden>
+            <header class="editor-toolbar">
+              <button
+                id="back-list"
+                type="button"
+                class="ghost back-list"
+                disabled
+              >
+                ← Notes</button
+              ><span id="save-status" role="status">New note</span>
+              <div class="toolbar-actions">
+                <button
+                  id="download-draft"
+                  type="button"
+                  class="ghost"
+                  title="Download this draft as Markdown"
+                  disabled
+                >
+                  Download draft</button
+                ><button
+                  id="save"
+                  class="primary"
+                  type="submit"
+                  title="Save note (Ctrl or Cmd + S)"
+                >
+                  Save note
+                </button>
+              </div>
+            </header>
+            <p id="editor-error" class="error editor-error" role="alert"></p>
+            <div class="writing-sheet">
+              <label for="note-title" class="sr-only">Note title</label
+              ><textarea
+                id="note-title"
+                class="note-title resize-none"
+                rows="1"
+                placeholder="Untitled note"
+                maxlength="160"
+                aria-describedby="editor-error"
+              ></textarea>
+              <p id="note-date" class="note-date">A fresh page.</p>
+              <label for="note-body" class="sr-only">Note text</label
+              ><textarea
+                id="note-body"
+                class="note-body resize-none"
+                placeholder="Let the thought unfold…"
+                maxlength="100000"
+                aria-describedby="editor-error"
+              ></textarea>
+            </div>
+            <footer class="editor-footer">
+              <div class="note-actions">
+                <button id="pin" type="button" class="ghost" disabled>
+                  Pin note</button
+                ><button id="archive" type="button" class="ghost" disabled>
+                  Archive</button
+                ><button id="trash" type="button" class="ghost danger" disabled>
+                  Move to trash
+                </button>
+              </div>
+              <span id="word-count" class="help">0 words</span>
+            </footer>
+          </form>
+        </section>
+      </section>
+    </main>
+    <div id="connection" class="connection" role="status" hidden>
+      You’re offline. Your draft stays here; save when you reconnect.
     </div>
-
-    <div id="noteSection" class="section" style="display: none;">
-        <p id="greetingMessage"></p>
-
-        <textarea id="newNoteContent"></textarea>
-        <button id="createNoteButton" onclick="createNote()">Create Note</button>
-
-        <h2>Your Notes</h2>
-        <div id="notes"></div>
-
-        <button onclick="logout()">Logout</button>
-    </div>
-
-    <script>
-        const API_BASE = '/v1';
-        let currentUserAPIKey = null;
-        let currentUser = null;
-
-        async function createNote() {
-            if (!currentUser) {
-                alert('Please create a user first');
-                return;
-            }
-            const noteContent = document.getElementById('newNoteContent').value;
-            const response = await fetchWithAlert(`${API_BASE}/notes`,
-                {
-                    method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `ApiKey ${currentUserAPIKey}` },
-                    body: JSON.stringify({ note: noteContent })
-                });
-            const note = await response.json();
-            displayNote(note);
-        }
-
-        async function getUser() {
-            const response = await fetchWithAlert(`${API_BASE}/users`, { headers: { 'Authorization': `ApiKey ${currentUserAPIKey}` } });
-            return await response.json();
-        }
-
-        async function loadNotes() {
-            if (!currentUser) {
-                return;
-            }
-            const response = await fetchWithAlert(`${API_BASE}/notes`, { headers: { 'Authorization': `ApiKey ${currentUserAPIKey}` } });
-            const notes = await response.json();
-            const notesContainer = document.getElementById('notes');
-            notesContainer.innerHTML = '';
-            notes.forEach(note => displayNote(note));
-        }
-
-        function displayNote(note) {
-            const noteElement = document.createElement('div');
-            noteElement.className = 'note';
-            noteElement.textContent = note.note;
-            document.getElementById('notes').appendChild(noteElement);
-        }
-
-        async function createUser() {
-            const nameField = document.getElementById('nameField');
-            const response = await fetchWithAlert(`${API_BASE}/users`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: nameField.value }) // using the value from nameField
-            });
-            const user = await response.json();
-            localStorage.setItem('currentUserAPIKey', user.api_key);
-            login()
-            alert(`User Created: ${user.name}`);
-
-            // Once a user is created, hide the user creation section and show the note section
-            document.getElementById('userCreationContainer').style.display = 'none';
-            document.getElementById('noteSection').style.display = 'flex';
-        }
-
-        function logout() {
-            localStorage.removeItem('currentUserAPIKey');
-            currentUser = null;
-
-            // When a user logs out, show the user creation section and hide the note section
-            document.getElementById('userCreationContainer').style.display = 'block';
-            document.getElementById('noteSection').style.display = 'none';
-        }
-
-        async function login() {
-            currentUserAPIKey = localStorage.getItem('currentUserAPIKey')
-            if (!currentUserAPIKey) {
-                return;
-            }
-            const user = await getUser();
-            currentUser = user;
-            currentUserAPIKey = user.api_key;
-            await loadNotes();
-
-            // When a user logs in, hide the user creation section and show the note section
-            document.getElementById('userCreationContainer').style.display = 'none';
-            document.getElementById('noteSection').style.display = 'flex';
-
-            // Display a greeting message
-            document.getElementById('greetingMessage').textContent = `Hello ${user.name}!`;
-        }
-
-        async function fetchWithAlert(url, options) {
-            const response = await fetch(url, options);
-            if (response.status > 299) {
-                alert(`Error: ${response.status}`);
-                return;
-            }
-            return response;
-        }
-
-        login();
-    </script>
-
-    <style>
-        :root {
-            --primary: hsl(235, 86%, 65%);
-            --primary-light: hsl(235, 88%, 73%);
-            --dark: #121212;
-            --light: #E4E4E4;
-            --grey: #424242;
-        }
-
-        body {
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-            background-color: var(--dark);
-            color: var(--light);
-            margin: 0;
-            padding: 0;
-            height: 100vh;
-        }
-
-        .section {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-
-        textarea {
-            width: 300px;
-            height: 100px;
-            margin-bottom: 10px;
-        }
-
-        input {
-            display: block;
-            padding: 1rem;
-        }
-
-        button {
-            background-color: var(--primary);
-            color: var(--light);
-            border: none;
-            padding: 15px 32px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 16px;
-            margin: 4px 2px;
-            cursor: pointer;
-            transition-duration: 0.4s;
-        }
-
-        button:hover {
-            background-color: var(--primary-light);
-        }
-
-        .note {
-            width: 300px;
-            background-color: var(--grey);
-            border: 1px solid var(--primary);
-            padding: 10px;
-            margin-bottom: 10px;
-        }
-
-        footer {
-            margin-top: auto;
-            padding: 16px;
-            color: #a0a0a0;
-            font-size: 0.75rem;
-            opacity: 0.85;
-        }
-
-        footer a {
-            color: inherit;
-        }
-    </style>
-    <!-- your existing CSS code... -->
-    <footer>Made in a <a href="https://www.boot.dev" target="_blank" rel="noopener noreferrer">Boot.dev</a> course</footer>
-</body>
-
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+    <dialog
+      id="decision"
+      aria-labelledby="decision-title"
+      aria-describedby="decision-copy"
+    >
+      <h2 id="decision-title">Discard unsaved changes?</h2>
+      <p id="decision-copy">Your unsaved edits will be lost.</p>
+      <div class="dialog-actions">
+        <button
+          id="decision-cancel"
+          type="button"
+          class="outline"
+          autofocus
+          disabled
+        >
+          Keep editing</button
+        ><button id="decision-confirm" type="button" class="primary" disabled>
+          Discard changes
+        </button>
+      </div>
+    </dialog>
+  </body>
 </html>

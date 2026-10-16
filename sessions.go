@@ -16,8 +16,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/bootdotdev/learn-cicd-starter/internal/database"
 	"github.com/google/uuid"
+	"github.com/yaqyn/leafmark/internal/database"
 	"golang.org/x/crypto/argon2"
 )
 

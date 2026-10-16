@@ -3,9 +3,9 @@ package main
 import (
 	"database/sql"
 	"errors"
-	"github.com/bootdotdev/learn-cicd-starter/internal/database"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/yaqyn/leafmark/internal/database"
 	"net/http"
 	"strconv"
 	"strings"
@@ -142,17 +142,12 @@ func (cfg *apiConfig) handlerNotesUpdate(w http.ResponseWriter, r *http.Request,
 	id := chi.URLParam(r, "id")
 	now := timestamp()
 	// Ownership and version are checked by the same atomic write.
-	result, err := cfg.conn.ExecContext(r.Context(), `UPDATE notes SET title=?,note=?,pinned=?,archived=?,trashed=?,updated_at=?,version=version+1 WHERE id=? AND user_id=? AND version=?`, n.Title, n.Note, n.Pinned, n.Archived, n.Trashed, now, id, u.ID, n.Version)
-	if err != nil {
+	saved, err := scanNote(cfg.conn.QueryRowContext(r.Context(), `UPDATE notes SET title=?,note=?,pinned=?,archived=?,trashed=?,updated_at=?,version=version+1 WHERE id=? AND user_id=? AND version=? RETURNING `+noteColumns, n.Title, n.Note, n.Pinned, n.Archived, n.Trashed, now, id, u.ID, n.Version))
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		respondWithError(w, 503, "Could not save note; try again", nil)
 		return
 	}
-	count, err := result.RowsAffected()
-	if err != nil {
-		respondWithError(w, 503, "Could not verify save", nil)
-		return
-	}
-	if count == 0 {
+	if errors.Is(err, sql.ErrNoRows) {
 		var version int
 		err = cfg.conn.QueryRowContext(r.Context(), `SELECT version FROM notes WHERE id=? AND user_id=?`, id, u.ID).Scan(&version)
 		if errors.Is(err, sql.ErrNoRows) {
@@ -164,10 +159,7 @@ func (cfg *apiConfig) handlerNotesUpdate(w http.ResponseWriter, r *http.Request,
 		}
 		return
 	}
-	n.ID = id
-	n.UpdatedAt = now
-	n.Version++
-	respondWithJSON(w, 200, n)
+	respondWithJSON(w, 200, saved)
 }
 func (cfg *apiConfig) exportNotes(w http.ResponseWriter, r *http.Request, u database.User) {
 	rows, err := cfg.conn.QueryContext(r.Context(), "SELECT "+noteColumns+" FROM notes WHERE user_id=? ORDER BY created_at,id", u.ID)

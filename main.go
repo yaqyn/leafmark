@@ -13,11 +13,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/bootdotdev/learn-cicd-starter/internal/database"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/joho/godotenv"
 	_ "github.com/tursodatabase/libsql-client-go/libsql"
+	"github.com/yaqyn/leafmark/internal/database"
 	_ "modernc.org/sqlite"
 )
 

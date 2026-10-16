@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/bootdotdev/learn-cicd-starter/internal/database"
+	"github.com/yaqyn/leafmark/internal/database"
 )
 
 func testApp(t *testing.T) (*apiConfig, http.Handler) {
@@ -63,6 +63,13 @@ func TestOwnershipConflictAndTrash(t *testing.T) {
 	w = request(h, "PUT", "/v1/notes/"+n.ID, `{"title":"Saved","note":"edited","version":1}`, alice)
 	if w.Code != 200 {
 		t.Fatal(w.Code, w.Body)
+	}
+	var saved leafNote
+	if err := json.Unmarshal(w.Body.Bytes(), &saved); err != nil {
+		t.Fatal(err)
+	}
+	if saved.CreatedAt != n.CreatedAt || saved.Version != 2 {
+		t.Fatal("update response lost metadata", saved)
 	}
 	w = request(h, "PUT", "/v1/notes/"+n.ID, `{"title":"Stale","version":1}`, alice)
 	if w.Code != 409 {

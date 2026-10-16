@@ -3,7 +3,7 @@ package main
 import (
 	"database/sql"
 	"errors"
-	"github.com/bootdotdev/learn-cicd-starter/internal/database"
+	"github.com/yaqyn/leafmark/internal/database"
 	"net/http"
 )
 

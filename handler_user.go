@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/bootdotdev/learn-cicd-starter/internal/database"
+	"github.com/yaqyn/leafmark/internal/database"
 	"net/http"
 )
 
