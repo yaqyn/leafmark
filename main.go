@@ -1,101 +1,133 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"embed"
-	"io"
-	"log"
+	"errors"
+	"io/fs"
+	"log/slog"
 	"net/http"
 	"os"
-	"strconv"
+	"os/signal"
+	"syscall"
 	"time"
 
-	"github.com/go-chi/chi"
-	"github.com/go-chi/cors"
-	"github.com/joho/godotenv"
-
 	"github.com/bootdotdev/learn-cicd-starter/internal/database"
-
+	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
+	"github.com/joho/godotenv"
 	_ "github.com/tursodatabase/libsql-client-go/libsql"
+	_ "modernc.org/sqlite"
 )
 
 type apiConfig struct {
-	DB *database.Queries
+	DB            *database.Queries
+	conn          *sql.DB
+	secureCookies bool
+	allowSignup   bool
+	limiter       *rateLimiter
 }
 
 //go:embed static/*
 var staticFiles embed.FS
 
-func main() {
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Printf("warning: assuming default configuration. .env unreadable: %v", err)
-	}
+//go:embed sql/schema/*.sql
+var schemaFiles embed.FS
 
+func main() {
+	_ = godotenv.Load()
 	port := os.Getenv("PORT")
 	if port == "" {
-		log.Fatal("PORT environment variable is not set")
+		port = "8080"
 	}
-
-	apiCfg := apiConfig{}
-
-	// https://github.com/libsql/libsql-client-go/#open-a-connection-to-sqld
-	// libsql://[your-database].turso.io?authToken=[your-auth-token]
 	dbURL := os.Getenv("DATABASE_URL")
+	driver := "libsql"
 	if dbURL == "" {
-		log.Println("DATABASE_URL environment variable is not set")
-		log.Println("Running without CRUD endpoints")
-	} else {
-		db, err := sql.Open("libsql", dbURL)
-		if err != nil {
-			log.Fatal(err)
-		}
-		dbQueries := database.New(db)
-		apiCfg.DB = dbQueries
-		log.Println("Connected to database!")
+		dbURL = "file:leafmark.db?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)"
+		driver = "sqlite"
 	}
+	db, err := sql.Open(driver, dbURL)
+	if err != nil {
+		slog.Error("database open failed")
+		os.Exit(1)
+	}
+	defer db.Close()
+	db.SetMaxOpenConns(1)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	err = db.PingContext(ctx)
+	if err == nil {
+		err = migrate(ctx, db)
+	}
+	cancel()
+	if err != nil {
+		slog.Error("database initialization failed; check connection and schema")
+		os.Exit(1)
+	}
+	cfg := &apiConfig{DB: database.New(db), conn: db, secureCookies: os.Getenv("COOKIE_SECURE") != "false", allowSignup: os.Getenv("ALLOW_SIGNUP") != "false", limiter: newRateLimiter()}
+	srv := &http.Server{Addr: ":" + port, Handler: cfg.routes(), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 << 10}
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-stop
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := srv.Shutdown(ctx); err != nil {
+			slog.Error("graceful shutdown failed")
+		}
+	}()
+	slog.Info("Leafmark listening", "port", port)
+	if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		slog.Error("HTTP server failed")
+		os.Exit(1)
+	}
+}
 
-	router := chi.NewRouter()
-
-	router.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"https://*", "http://*"},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"*"},
-		ExposedHeaders:   []string{"Link"},
-		AllowCredentials: false,
-		MaxAge:           300,
-	}))
-
-	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		f, err := staticFiles.Open("static/index.html")
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+func (cfg *apiConfig) routes() http.Handler {
+	r := chi.NewRouter()
+	r.Use(middleware.RequestID, middleware.Recoverer)
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("X-Content-Type-Options", "nosniff")
+			w.Header().Set("Referrer-Policy", "no-referrer")
+			w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'")
+			w.Header().Set("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+			if cfg.secureCookies {
+				w.Header().Set("Strict-Transport-Security", "max-age=31536000")
+			}
+			if len(r.URL.Path) >= 4 && r.URL.Path[:4] == "/v1/" {
+				w.Header().Set("Cache-Control", "no-store")
+			}
+			next.ServeHTTP(w, r)
+		})
+	})
+	r.Get("/v1/healthz", handlerReadiness)
+	r.Get("/v1/readyz", func(w http.ResponseWriter, r *http.Request) {
+		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+		defer cancel()
+		if cfg.conn.PingContext(ctx) != nil {
+			respondWithError(w, 503, "Database unavailable", nil)
 			return
 		}
-		defer f.Close()
-		if _, err := io.Copy(w, f); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
+		respondWithJSON(w, 200, map[string]string{"status": "ready"})
 	})
-
-	v1Router := chi.NewRouter()
-
-	if apiCfg.DB != nil {
-		v1Router.Post("/users", apiCfg.handlerUsersCreate)
-		v1Router.Get("/users", apiCfg.middlewareAuth(apiCfg.handlerUsersGet))
-		v1Router.Get("/notes", apiCfg.middlewareAuth(apiCfg.handlerNotesGet))
-		v1Router.Post("/notes", apiCfg.middlewareAuth(apiCfg.handlerNotesCreate))
-	}
-
-	v1Router.Get("/healthz", handlerReadiness)
-
-	router.Mount("/v1", v1Router)
-	srv := &http.Server{
-		Addr:              ":" + port,
-		Handler:           router,
-		ReadHeaderTimeout: 5 * time.Second,
-	}
-
-	log.Printf("Serving on port: %s\n", strconv.Quote(port))
-	log.Fatal(srv.ListenAndServe())
+	r.Post("/v1/auth/register", cfg.limitAuth(cfg.register))
+	r.Post("/v1/auth/login", cfg.limitAuth(cfg.login))
+	r.Post("/v1/auth/claim", cfg.limitAuth(cfg.claimLegacy))
+	r.Post("/v1/auth/logout", cfg.logout)
+	r.Get("/v1/users", cfg.middlewareAuth(cfg.handlerUsersGet))
+	r.Get("/v1/notes", cfg.middlewareAuth(cfg.handlerNotesGet))
+	r.Post("/v1/notes", cfg.middlewareAuth(cfg.handlerNotesCreate))
+	r.Put("/v1/notes/{id}", cfg.middlewareAuth(cfg.handlerNotesUpdate))
+	r.Get("/v1/export", cfg.middlewareAuth(cfg.exportNotes))
+	r.NotFound(func(w http.ResponseWriter, r *http.Request) { respondWithError(w, 404, "Page not found", nil) })
+	assets, _ := fs.Sub(staticFiles, "static")
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		r.URL.Path = "/index.html"
+		data, _ := staticFiles.ReadFile("static/index.html")
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		_, _ = w.Write(data)
+	})
+	r.Handle("/assets/*", http.StripPrefix("/assets/", http.FileServer(http.FS(assets))))
+	return http.NewCrossOriginProtection().Handler(r)
 }

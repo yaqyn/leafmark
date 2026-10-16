@@ -1,28 +1,25 @@
 package main
 
 import (
-	"net/http"
-
-	"github.com/bootdotdev/learn-cicd-starter/internal/auth"
+	"database/sql"
+	"errors"
 	"github.com/bootdotdev/learn-cicd-starter/internal/database"
+	"net/http"
 )
 
 type authedHandler func(http.ResponseWriter, *http.Request, database.User)
 
-func (cfg *apiConfig) middlewareAuth(handler authedHandler) http.HandlerFunc {
+func (cfg *apiConfig) middlewareAuth(next authedHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		apiKey, err := auth.GetAPIKey(r.Header)
+		user, err := cfg.sessionUser(r)
 		if err != nil {
-			respondWithError(w, http.StatusUnauthorized, "Couldn't find api key", err)
+			if errors.Is(err, sql.ErrNoRows) || errors.Is(err, http.ErrNoCookie) {
+				respondWithError(w, 401, "Sign in to continue", nil)
+			} else {
+				respondWithError(w, 503, "Account unavailable; try again", nil)
+			}
 			return
 		}
-
-		user, err := cfg.DB.GetUser(r.Context(), apiKey)
-		if err != nil {
-			respondWithError(w, http.StatusNotFound, "Couldn't get user", err)
-			return
-		}
-
-		handler(w, r, user)
+		next(w, r, user)
 	}
 }
