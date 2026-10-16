@@ -23,4 +23,4 @@ Forced a concurrent database update: the browser displayed the 409 conflict, ret
 
 ## Release boundary
 
-The changes are committed locally. Public deployment, remote repository/directory rename, remote CI execution, existing Turso schema upgrade, scheduled backups, TLS/proxy configuration, restore drill on the target host, distributed abuse controls, and automated account recovery have not been performed. The supported deployment scope is a personal, single-instance app with operator-managed HTTPS and backups. A public multi-user service needs further operational and recovery work.
+The repository and local checkout use the Leafmark name. This record covers local verification; consult GitHub Actions for the published commit’s CI result. Public deployment, existing Turso schema upgrade, scheduled backups, TLS/proxy configuration, restore drill on the target host, distributed abuse controls, and automated account recovery have not been performed. The supported deployment scope is a personal, single-instance app with operator-managed HTTPS and backups. A public multi-user service needs further operational and recovery work.
