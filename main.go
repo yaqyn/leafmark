@@ -14,8 +14,8 @@ import (
 	"time"
 
 	"github.com/bootdotdev/learn-cicd-starter/internal/database"
-	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/joho/godotenv"
 	_ "github.com/tursodatabase/libsql-client-go/libsql"
 	_ "modernc.org/sqlite"
@@ -66,9 +66,11 @@ func main() {
 	}
 	cfg := &apiConfig{DB: database.New(db), conn: db, secureCookies: os.Getenv("COOKIE_SECURE") != "false", allowSignup: os.Getenv("ALLOW_SIGNUP") != "false", limiter: newRateLimiter()}
 	srv := &http.Server{Addr: ":" + port, Handler: cfg.routes(), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 << 10}
+	shutdownDone := make(chan struct{})
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
+		defer close(shutdownDone)
 		<-stop
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
@@ -81,6 +83,7 @@ func main() {
 		slog.Error("HTTP server failed")
 		os.Exit(1)
 	}
+	<-shutdownDone
 }
 
 func (cfg *apiConfig) routes() http.Handler {

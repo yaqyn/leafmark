@@ -234,12 +234,18 @@ func (cfg *apiConfig) limitAuth(next http.HandlerFunc) http.HandlerFunc {
 				delete(l.attempts, k)
 			}
 		}
-		a := l.attempts[host]
+		a, known := l.attempts[host]
+		if !known && len(l.attempts) >= 10000 {
+			l.mu.Unlock()
+			w.Header().Set("Retry-After", "600")
+			respondWithError(w, 429, "Too many attempts; try again later", nil)
+			return
+		}
 		if a.start.IsZero() {
 			a.start = now
 		}
 		a.count++
-		allowed := a.count <= 20 && len(l.attempts) < 10000
+		allowed := a.count <= 20
 		l.attempts[host] = a
 		l.mu.Unlock()
 		if !allowed {

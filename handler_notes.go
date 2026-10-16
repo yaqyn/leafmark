@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"github.com/bootdotdev/learn-cicd-starter/internal/database"
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"net/http"
 	"strconv"
@@ -102,13 +102,32 @@ func (cfg *apiConfig) handlerNotesCreate(w http.ResponseWriter, r *http.Request,
 	if !decodeJSON(w, r, &n) || !validateNote(w, &n) {
 		return
 	}
-	n.ID = uuid.NewString()
+	if n.ID == "" {
+		n.ID = uuid.NewString()
+	} else if _, err := uuid.Parse(n.ID); err != nil {
+		respondWithError(w, 400, "Invalid note identifier", nil)
+		return
+	}
 	n.CreatedAt = timestamp()
 	n.UpdatedAt = n.CreatedAt
 	n.Version = 1
-	_, err := cfg.conn.ExecContext(r.Context(), `INSERT INTO notes(id,title,note,created_at,updated_at,user_id,pinned,archived,trashed,version) VALUES(?,?,?,?,?,?,?,0,0,1)`, n.ID, n.Title, n.Note, n.CreatedAt, n.UpdatedAt, u.ID, n.Pinned)
+	result, err := cfg.conn.ExecContext(r.Context(), `INSERT INTO notes(id,title,note,created_at,updated_at,user_id,pinned,archived,trashed,version) VALUES(?,?,?,?,?,?,?,0,0,1) ON CONFLICT(id) DO NOTHING`, n.ID, n.Title, n.Note, n.CreatedAt, n.UpdatedAt, u.ID, n.Pinned)
 	if err != nil {
 		respondWithError(w, 503, "Could not save note; try again", nil)
+		return
+	}
+	count, err := result.RowsAffected()
+	if err != nil {
+		respondWithError(w, 503, "Could not verify save", nil)
+		return
+	}
+	if count == 0 {
+		existing, err := scanNote(cfg.conn.QueryRowContext(r.Context(), "SELECT "+noteColumns+" FROM notes WHERE id=? AND user_id=?", n.ID, u.ID))
+		if err == nil && existing.Title == n.Title && existing.Note == n.Note && existing.Pinned == n.Pinned && !existing.Archived && !existing.Trashed {
+			respondWithJSON(w, 200, existing)
+			return
+		}
+		respondWithError(w, 409, "This note was already saved. Download your draft and reload notes before editing again.", nil)
 		return
 	}
 	n.Archived = false

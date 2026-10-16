@@ -183,3 +183,51 @@ func TestAuthRateLimit(t *testing.T) {
 		t.Fatal(w.Code)
 	}
 }
+
+func TestCreateRetryIsIdempotent(t *testing.T) {
+	_, h := testApp(t)
+	cookie := signup(t, h, "retry-user")
+	body := `{"id":"01234567-89ab-4cde-8fab-0123456789ab","title":"Retry safe","note":"One copy"}`
+	for i := range 2 {
+		w := request(h, "POST", "/v1/notes", body, cookie)
+		if w.Code != 201 && !(i == 1 && w.Code == 200) {
+			t.Fatal(w.Code, w.Body)
+		}
+	}
+	w := request(h, "GET", "/v1/notes", "", cookie)
+	if !strings.Contains(w.Body.String(), `"total":1`) {
+		t.Fatal(w.Body)
+	}
+	w = request(h, "POST", "/v1/notes", strings.Replace(body, "One copy", "Changed after uncertainty", 1), cookie)
+	if w.Code != 409 {
+		t.Fatal("retry overwrote stored note", w.Code)
+	}
+}
+
+func TestSessionStorageExpiryAndReadinessFailure(t *testing.T) {
+	cfg, h := testApp(t)
+	cfg.secureCookies = true
+	cookie := signup(t, h, "expiry-user")
+	if !cookie.Secure {
+		t.Fatal("production cookie is not Secure")
+	}
+	var stored string
+	if err := cfg.conn.QueryRow(`SELECT token_hash FROM sessions`).Scan(&stored); err != nil {
+		t.Fatal(err)
+	}
+	if stored == cookie.Value || stored != hashToken(cookie.Value) {
+		t.Fatal("session token not hashed")
+	}
+	if _, err := cfg.conn.Exec(`UPDATE sessions SET expires_at='2000-01-01T00:00:00Z'`); err != nil {
+		t.Fatal(err)
+	}
+	w := request(h, "GET", "/v1/users", "", cookie)
+	if w.Code != 401 {
+		t.Fatal("expired session accepted", w.Code)
+	}
+	cfg.conn.Close()
+	w = request(h, "GET", "/v1/readyz", "", nil)
+	if w.Code != 503 {
+		t.Fatal("readiness ignored database failure", w.Code)
+	}
+}
