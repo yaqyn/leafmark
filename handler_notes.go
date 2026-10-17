@@ -43,13 +43,14 @@ func validateNote(w http.ResponseWriter, n *leafNote) bool {
 	return true
 }
 func (cfg *apiConfig) handlerNotesGet(w http.ResponseWriter, r *http.Request, u database.User) {
-	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
-	if page < 1 {
-		page = 1
-	}
-	if page > 100000 {
-		respondWithError(w, 400, "Page is out of range", nil)
-		return
+	page := 1
+	if raw := r.URL.Query().Get("page"); raw != "" {
+		var err error
+		page, err = strconv.Atoi(raw)
+		if err != nil || page < 1 || page > 100000 {
+			respondWithError(w, 400, "Page must be an integer between 1 and 100000", nil)
+			return
+		}
 	}
 	q := r.URL.Query().Get("q")
 	if len(q) > 200 {

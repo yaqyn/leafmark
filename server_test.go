@@ -100,6 +100,23 @@ func TestOwnershipConflictAndTrash(t *testing.T) {
 		t.Fatal("export leaked another user's note")
 	}
 }
+
+func TestInvalidNotePagesAreNotSilentlyReplacedWithPageOne(t *testing.T) {
+	_, h := testApp(t)
+	cookie := signup(t, h, "pager")
+	for _, page := range []string{"bad", "0", "-1", "100001", "999999999999999999999999"} {
+		response := request(h, "GET", "/v1/notes?page="+page, "", cookie)
+		if response.Code != 400 {
+			t.Fatalf("page %q: %d %s", page, response.Code, response.Body)
+		}
+	}
+	for _, query := range []string{"", "?page=1", "?page=100000"} {
+		response := request(h, "GET", "/v1/notes"+query, "", cookie)
+		if response.Code != 200 {
+			t.Fatalf("%q: %d %s", query, response.Code, response.Body)
+		}
+	}
+}
 func TestSessionsValidationAndCSRF(t *testing.T) {
 	cfg, h := testApp(t)
 	cookie := signup(t, h, "tester")
