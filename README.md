@@ -16,7 +16,7 @@ Run locally with Go, or use Docker Compose. Local SQLite requires no external ac
 
 ## <img src="readme-assets/icons/installation.svg" width="24" height="24" alt=""> Installation
 
-Requires Go 1.27.1+ or Docker with Compose. The first Go build downloads the modules recorded in `go.sum`.
+Requires Go 1.27.2+ or Docker with Compose. The first Go build downloads the modules recorded in `go.sum`.
 
 ```sh
 test -e .env || cp .env.example .env
