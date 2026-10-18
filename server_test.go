@@ -117,6 +117,19 @@ func TestInvalidNotePagesAreNotSilentlyReplacedWithPageOne(t *testing.T) {
 		}
 	}
 }
+func TestNoteSearchLimitCountsCharactersNotUTF8Bytes(t *testing.T) {
+	_, h := testApp(t)
+	cookie := signup(t, h, "unicode-search")
+	for query, want := range map[string]int{
+		strings.Repeat("ش", 200): 200,
+		strings.Repeat("ش", 201): 400,
+	} {
+		response := request(h, "GET", "/v1/notes?q="+query, "", cookie)
+		if response.Code != want {
+			t.Fatalf("%d characters: %d %s", len([]rune(query)), response.Code, response.Body)
+		}
+	}
+}
 func TestSessionsValidationAndCSRF(t *testing.T) {
 	cfg, h := testApp(t)
 	cookie := signup(t, h, "tester")

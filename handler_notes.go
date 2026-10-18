@@ -53,7 +53,7 @@ func (cfg *apiConfig) handlerNotesGet(w http.ResponseWriter, r *http.Request, u 
 		}
 	}
 	q := r.URL.Query().Get("q")
-	if len(q) > 200 {
+	if !utf8.ValidString(q) || utf8.RuneCountInString(q) > 200 {
 		respondWithError(w, 400, "Search is too long", nil)
 		return
 	}
