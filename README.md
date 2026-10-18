@@ -19,6 +19,8 @@ Run locally with Go, or use Docker Compose. Local SQLite requires no external ac
 Requires Go 1.27.2+ or Docker with Compose. The first Go build downloads the modules recorded in `go.sum`.
 
 ```sh
+git clone https://github.com/yaqyn/leafmark-notebook.git
+cd leafmark-notebook
 test -e .env || cp .env.example .env
 # Edit an existing .env instead of overwriting it.
 # Set COOKIE_SECURE=false for localhost HTTP.

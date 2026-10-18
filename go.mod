@@ -1,4 +1,4 @@
-module github.com/yaqyn/leafmark
+module github.com/yaqyn/leafmark-notebook
 
 go 1.27.2
 

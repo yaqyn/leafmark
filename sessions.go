@@ -17,7 +17,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/yaqyn/leafmark/internal/database"
+	"github.com/yaqyn/leafmark-notebook/internal/database"
 	"golang.org/x/crypto/argon2"
 )
 

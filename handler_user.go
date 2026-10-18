@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/yaqyn/leafmark/internal/database"
+	"github.com/yaqyn/leafmark-notebook/internal/database"
 	"net/http"
 )
 

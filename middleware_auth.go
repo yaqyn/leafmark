@@ -3,7 +3,7 @@ package main
 import (
 	"database/sql"
 	"errors"
-	"github.com/yaqyn/leafmark/internal/database"
+	"github.com/yaqyn/leafmark-notebook/internal/database"
 	"net/http"
 )
 

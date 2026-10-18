@@ -3,7 +3,7 @@ package main
 import (
 	"time"
 
-	"github.com/yaqyn/leafmark/internal/database"
+	"github.com/yaqyn/leafmark-notebook/internal/database"
 )
 
 type User struct {

@@ -50,3 +50,10 @@ No automatic migration is run against your existing remote database during local
 ## Known operating limits
 
 No automated account recovery, email verification, distributed rate limiter, automatic backup schedule, data-at-rest encryption managed by the app, end-to-end encryption, or high-availability topology. Disk/provider encryption, monitoring, retention, and recovery ownership belong to the deployment operator. The JSON export is collected in memory; very large notebooks need a streaming export and explicit quotas before a public multi-user launch.
+
+## Compose project identity
+
+The repository and checkout are named `leafmark-notebook`. Compose explicitly
+uses the project name `leafmark`, retaining the default volume identity from
+the former `leafmark` checkout. If an existing deployment uses a custom
+`COMPOSE_PROJECT_NAME` or `docker compose -p`, continue using that same override.

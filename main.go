@@ -17,7 +17,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/joho/godotenv"
 	_ "github.com/tursodatabase/libsql-client-go/libsql"
-	"github.com/yaqyn/leafmark/internal/database"
+	"github.com/yaqyn/leafmark-notebook/internal/database"
 	_ "modernc.org/sqlite"
 )
 

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/yaqyn/leafmark/internal/database"
+	"github.com/yaqyn/leafmark-notebook/internal/database"
 )
 
 func testApp(t *testing.T) (*apiConfig, http.Handler) {

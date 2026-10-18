@@ -21,6 +21,10 @@ rounded:
 
 # Leafmark design
 
+The product name is **Leafmark**. The repository and local checkout are
+`leafmark-notebook`, pairing the brand with its purpose. Keep the existing
+wordmark, folded-page mark, palette, and user-facing Leafmark name.
+
 ## North star
 A personal notebook on a blue drafting desk: orderly navigation, a generous writing sheet, and a folded-page mark. The writing is the memorable element. Product register throughout; no marketing landing page between returning users and their notes.
 
