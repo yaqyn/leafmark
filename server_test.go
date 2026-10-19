@@ -130,6 +130,16 @@ func TestNoteSearchLimitCountsCharactersNotUTF8Bytes(t *testing.T) {
 		}
 	}
 }
+func TestDuplicateNoteFiltersAreRejected(t *testing.T) {
+	_, h := testApp(t)
+	cookie := signup(t, h, "duplicate-filter")
+	for _, query := range []string{"?page=1&page=2", "?q=one&q=two", "?view=all&view=trash"} {
+		response := request(h, "GET", "/v1/notes"+query, "", cookie)
+		if response.Code != 400 {
+			t.Fatalf("%s: %d %s", query, response.Code, response.Body)
+		}
+	}
+}
 func TestSessionsValidationAndCSRF(t *testing.T) {
 	cfg, h := testApp(t)
 	cookie := signup(t, h, "tester")

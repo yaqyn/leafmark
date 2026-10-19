@@ -43,8 +43,15 @@ func validateNote(w http.ResponseWriter, n *leafNote) bool {
 	return true
 }
 func (cfg *apiConfig) handlerNotesGet(w http.ResponseWriter, r *http.Request, u database.User) {
+	query := r.URL.Query()
+	for _, name := range []string{"page", "q", "view"} {
+		if len(query[name]) > 1 {
+			respondWithError(w, 400, "Duplicate "+name+" parameter", nil)
+			return
+		}
+	}
 	page := 1
-	if raw := r.URL.Query().Get("page"); raw != "" {
+	if raw := query.Get("page"); raw != "" {
 		var err error
 		page, err = strconv.Atoi(raw)
 		if err != nil || page < 1 || page > 100000 {
@@ -52,12 +59,12 @@ func (cfg *apiConfig) handlerNotesGet(w http.ResponseWriter, r *http.Request, u 
 			return
 		}
 	}
-	q := r.URL.Query().Get("q")
+	q := query.Get("q")
 	if !utf8.ValidString(q) || utf8.RuneCountInString(q) > 200 {
 		respondWithError(w, 400, "Search is too long", nil)
 		return
 	}
-	view := r.URL.Query().Get("view")
+	view := query.Get("view")
 	filter := "trashed=0 AND archived=0"
 	switch view {
 	case "archive":
