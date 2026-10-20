@@ -140,6 +140,17 @@ func TestDuplicateNoteFiltersAreRejected(t *testing.T) {
 		}
 	}
 }
+func TestWhitespaceOnlyNoteSearchShowsAllNotes(t *testing.T) {
+	_, h := testApp(t)
+	cookie := signup(t, h, "space-search")
+	if response := request(h, "POST", "/v1/notes", `{"title":"Solo"}`, cookie); response.Code != 201 {
+		t.Fatal(response.Code, response.Body)
+	}
+	response := request(h, "GET", "/v1/notes?q=%20%20", "", cookie)
+	if response.Code != 200 || !strings.Contains(response.Body.String(), `"total":1`) {
+		t.Fatal(response.Code, response.Body)
+	}
+}
 func TestSessionsValidationAndCSRF(t *testing.T) {
 	cfg, h := testApp(t)
 	cookie := signup(t, h, "tester")

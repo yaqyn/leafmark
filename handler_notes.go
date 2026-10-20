@@ -59,7 +59,7 @@ func (cfg *apiConfig) handlerNotesGet(w http.ResponseWriter, r *http.Request, u 
 			return
 		}
 	}
-	q := query.Get("q")
+	q := strings.TrimSpace(query.Get("q"))
 	if !utf8.ValidString(q) || utf8.RuneCountInString(q) > 200 {
 		respondWithError(w, 400, "Search is too long", nil)
 		return
