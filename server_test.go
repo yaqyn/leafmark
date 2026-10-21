@@ -140,6 +140,14 @@ func TestDuplicateNoteFiltersAreRejected(t *testing.T) {
 		}
 	}
 }
+func TestUnknownNoteFiltersAreRejected(t *testing.T) {
+	_, h := testApp(t)
+	cookie := signup(t, h, "unknown-filter")
+	response := request(h, "GET", "/v1/notes?veiw=trash", "", cookie)
+	if response.Code != http.StatusBadRequest {
+		t.Fatalf("%d %s", response.Code, response.Body)
+	}
+}
 func TestWhitespaceOnlyNoteSearchShowsAllNotes(t *testing.T) {
 	_, h := testApp(t)
 	cookie := signup(t, h, "space-search")

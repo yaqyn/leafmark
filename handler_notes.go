@@ -44,6 +44,13 @@ func validateNote(w http.ResponseWriter, n *leafNote) bool {
 }
 func (cfg *apiConfig) handlerNotesGet(w http.ResponseWriter, r *http.Request, u database.User) {
 	query := r.URL.Query()
+	allowed := map[string]bool{"page": true, "q": true, "view": true}
+	for name := range query {
+		if !allowed[name] {
+			respondWithError(w, 400, "Unknown note filter", nil)
+			return
+		}
+	}
 	for _, name := range []string{"page", "q", "view"} {
 		if len(query[name]) > 1 {
 			respondWithError(w, 400, "Duplicate "+name+" parameter", nil)
