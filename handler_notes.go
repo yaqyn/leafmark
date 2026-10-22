@@ -44,16 +44,25 @@ func validateNote(w http.ResponseWriter, n *leafNote) bool {
 }
 func (cfg *apiConfig) handlerNotesGet(w http.ResponseWriter, r *http.Request, u database.User) {
 	query := r.URL.Query()
-	allowed := map[string]bool{"page": true, "q": true, "view": true}
+	allowed := map[string]bool{"page": true, "page_size": true, "q": true, "view": true}
 	for name := range query {
 		if !allowed[name] {
 			respondWithError(w, 400, "Unknown note filter", nil)
 			return
 		}
 	}
-	for _, name := range []string{"page", "q", "view"} {
+	for _, name := range []string{"page", "page_size", "q", "view"} {
 		if len(query[name]) > 1 {
 			respondWithError(w, 400, "Duplicate "+name+" parameter", nil)
+			return
+		}
+	}
+	pageSize := 30
+	if raw := query.Get("page_size"); raw != "" {
+		var err error
+		pageSize, err = strconv.Atoi(raw)
+		if err != nil || pageSize < 1 || pageSize > 100 {
+			respondWithError(w, 400, "Page size must be an integer between 1 and 100", nil)
 			return
 		}
 	}
@@ -91,7 +100,7 @@ func (cfg *apiConfig) handlerNotesGet(w http.ResponseWriter, r *http.Request, u 
 		respondWithError(w, 503, "Could not load notes", nil)
 		return
 	}
-	rows, err := cfg.conn.QueryContext(r.Context(), "SELECT "+noteColumns+where+" ORDER BY pinned DESC, updated_at DESC, id LIMIT 30 OFFSET ?", u.ID, q, q, (page-1)*30)
+	rows, err := cfg.conn.QueryContext(r.Context(), "SELECT "+noteColumns+where+" ORDER BY pinned DESC, updated_at DESC, id LIMIT ? OFFSET ?", u.ID, q, q, pageSize, (page-1)*pageSize)
 	if err != nil {
 		respondWithError(w, 503, "Could not load notes", nil)
 		return
@@ -110,7 +119,7 @@ func (cfg *apiConfig) handlerNotesGet(w http.ResponseWriter, r *http.Request, u 
 		respondWithError(w, 503, "Could not read notes", nil)
 		return
 	}
-	respondWithJSON(w, 200, map[string]any{"notes": notes, "total": total, "page": page, "page_size": 30})
+	respondWithJSON(w, 200, map[string]any{"notes": notes, "total": total, "page": page, "page_size": pageSize})
 }
 func (cfg *apiConfig) handlerNotesCreate(w http.ResponseWriter, r *http.Request, u database.User) {
 	var n leafNote

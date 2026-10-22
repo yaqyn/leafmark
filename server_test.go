@@ -133,10 +133,28 @@ func TestNoteSearchLimitCountsCharactersNotUTF8Bytes(t *testing.T) {
 func TestDuplicateNoteFiltersAreRejected(t *testing.T) {
 	_, h := testApp(t)
 	cookie := signup(t, h, "duplicate-filter")
-	for _, query := range []string{"?page=1&page=2", "?q=one&q=two", "?view=all&view=trash"} {
+	for _, query := range []string{"?page=1&page=2", "?page_size=10&page_size=20", "?q=one&q=two", "?view=all&view=trash"} {
 		response := request(h, "GET", "/v1/notes"+query, "", cookie)
 		if response.Code != 400 {
 			t.Fatalf("%s: %d %s", query, response.Code, response.Body)
+		}
+	}
+}
+func TestNotePageSizeIsBoundedAndReported(t *testing.T) {
+	_, h := testApp(t)
+	cookie := signup(t, h, "page-size")
+	for _, title := range []string{"One", "Two"} {
+		if response := request(h, "POST", "/v1/notes", `{"title":"`+title+`"}`, cookie); response.Code != 201 {
+			t.Fatal(response.Code, response.Body)
+		}
+	}
+	response := request(h, "GET", "/v1/notes?page_size=1", "", cookie)
+	if response.Code != 200 || !strings.Contains(response.Body.String(), `"page_size":1`) || !strings.Contains(response.Body.String(), `"total":2`) {
+		t.Fatal(response.Code, response.Body)
+	}
+	for _, size := range []string{"0", "101", "bad"} {
+		if response := request(h, "GET", "/v1/notes?page_size="+size, "", cookie); response.Code != 400 {
+			t.Fatalf("%s: %d %s", size, response.Code, response.Body)
 		}
 	}
 }
