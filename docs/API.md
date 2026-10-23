@@ -16,7 +16,7 @@ All `/v1` responses use `Cache-Control: no-store`. JSON mutations require `Conte
 | `PUT /v1/notes/{id}` | Full `{title, note, pinned, archived, trashed, version}` update |
 | `GET /v1/export` | Downloads `{format, exported_at, notes}` including archive/trash |
 
-List query parameters: `view=all|pinned|archive|trash`, `q` (max 200 characters), `page` (positive integer), and `page_size=1..100`. Search is literal and case-insensitive for ASCII; SQLite's built-in lower does not provide full Unicode case folding. Order is pinned first, then most recently changed, then ID.
+List query parameters: `view=all|pinned|archive|trash`, `q` (max 200 characters), `page` (positive integer), `page_size=1..100`, and `sort=updated|created`. Search is literal and case-insensitive for ASCII; SQLite's built-in lower does not provide full Unicode case folding. Pinned notes remain first, followed by the selected newest-first timestamp and then ID.
 
 Create may include a client-generated UUID. Retrying an identical create with the same ID returns the saved note without making a duplicate; a different payload returns 409.
 

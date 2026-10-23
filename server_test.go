@@ -133,11 +133,23 @@ func TestNoteSearchLimitCountsCharactersNotUTF8Bytes(t *testing.T) {
 func TestDuplicateNoteFiltersAreRejected(t *testing.T) {
 	_, h := testApp(t)
 	cookie := signup(t, h, "duplicate-filter")
-	for _, query := range []string{"?page=1&page=2", "?page_size=10&page_size=20", "?q=one&q=two", "?view=all&view=trash"} {
+	for _, query := range []string{"?page=1&page=2", "?page_size=10&page_size=20", "?q=one&q=two", "?view=all&view=trash", "?sort=created&sort=updated"} {
 		response := request(h, "GET", "/v1/notes"+query, "", cookie)
 		if response.Code != 400 {
 			t.Fatalf("%s: %d %s", query, response.Code, response.Body)
 		}
+	}
+}
+func TestNoteSortModesAreValidated(t *testing.T) {
+	_, h := testApp(t)
+	cookie := signup(t, h, "sort-mode")
+	for _, sort := range []string{"created", "updated"} {
+		if response := request(h, "GET", "/v1/notes?sort="+sort, "", cookie); response.Code != 200 {
+			t.Fatalf("%s: %d %s", sort, response.Code, response.Body)
+		}
+	}
+	if response := request(h, "GET", "/v1/notes?sort=oldest", "", cookie); response.Code != 400 {
+		t.Fatalf("invalid sort: %d %s", response.Code, response.Body)
 	}
 }
 func TestNotePageSizeIsBoundedAndReported(t *testing.T) {
