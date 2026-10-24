@@ -99,8 +99,10 @@ func (cfg *apiConfig) handlerNotesGet(w http.ResponseWriter, r *http.Request, u 
 	case "", "updated":
 	case "created":
 		order = "created_at DESC, id"
+	case "oldest":
+		order = "created_at ASC, id"
 	default:
-		respondWithError(w, 400, "Sort must be updated or created", nil)
+		respondWithError(w, 400, "Sort must be updated, created, or oldest", nil)
 		return
 	}
 	where := ` FROM notes WHERE user_id=? AND ` + filter + ` AND (?='' OR instr(lower(title || char(10) || note),lower(?))>0)`

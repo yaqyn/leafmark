@@ -141,14 +141,29 @@ func TestDuplicateNoteFiltersAreRejected(t *testing.T) {
 	}
 }
 func TestNoteSortModesAreValidated(t *testing.T) {
-	_, h := testApp(t)
+	cfg, h := testApp(t)
 	cookie := signup(t, h, "sort-mode")
-	for _, sort := range []string{"created", "updated"} {
+	for _, title := range []string{"Older", "Newer"} {
+		if response := request(h, "POST", "/v1/notes", `{"title":"`+title+`"}`, cookie); response.Code != 201 {
+			t.Fatal(response.Code, response.Body)
+		}
+	}
+	if _, err := cfg.conn.Exec(`UPDATE notes SET created_at='2025-01-01T00:00:00Z' WHERE title='Older'`); err != nil {
+		t.Fatal(err)
+	}
+	for _, sort := range []string{"created", "updated", "oldest"} {
 		if response := request(h, "GET", "/v1/notes?sort="+sort, "", cookie); response.Code != 200 {
 			t.Fatalf("%s: %d %s", sort, response.Code, response.Body)
 		}
 	}
-	if response := request(h, "GET", "/v1/notes?sort=oldest", "", cookie); response.Code != 400 {
+	response := request(h, "GET", "/v1/notes?sort=oldest", "", cookie)
+	var page struct {
+		Notes []leafNote `json:"notes"`
+	}
+	if err := json.Unmarshal(response.Body.Bytes(), &page); err != nil || len(page.Notes) != 2 || page.Notes[0].Title != "Older" {
+		t.Fatalf("oldest ordering: %d %s", response.Code, response.Body.String())
+	}
+	if response := request(h, "GET", "/v1/notes?sort=random", "", cookie); response.Code != 400 {
 		t.Fatalf("invalid sort: %d %s", response.Code, response.Body)
 	}
 }
